@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+  <title>Tri-Color Point Art</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; height: 100%; margin: 0; overflow: hidden;
+      background: radial-gradient(circle at 50% 40%, #202026 0%, #0d0d11 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      user-select: none;
+    }
+    canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 1; }
+    .ui {
+      position: fixed; z-index: 10; bottom: max(25px, env(safe-area-inset-bottom) + 10px);
+      left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 8px;
+      pointer-events: none;
+    }
+    .info {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      font-weight: 700; color: #ff2233; text-shadow: 0 0 10px rgba(255,34,51,.6);
+    }
+    button {
+      pointer-events: auto; touch-action: manipulation; min-width: 240px; padding: 14px 26px;
+      font-size: 14px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      border-radius: 30px; border: 1.5px solid #ff2233; background: rgba(10, 10, 14, 0.8);
+      color: #fff; box-shadow: 0 4px 20px rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px); transition: transform .15s;
+    }
+    button:active { transform: scale(0.96); }
+    .sub { font-size: 10px; color: rgba(255,255,255,.45); }
+  </style>
+</head>
+<body>
+  <canvas id="c"></canvas>
+  <div class="ui">
+    <div id="lbl" class="info">1 / 6 • Жнец с косой</div>
+    <button id="btn">Следующий арт</button>
+    <div class="sub">Ведите пальцем по экрану</div>
+  </div>
+
+  <script>
+    const cvs = document.getElementById('c'), ctx = cvs.getContext('2d');
+    const btn = document.getElementById('btn'), lbl = document.getElementById('lbl');
+    let w, h, particles = [], artIdx = 0;
+
+    const names = [
+      "Жнец со светом", "Демон и девушка", "Девушка-кошка",
+      "Пентаграмма", "Силуэт в джинсах", "А2 с клинком"
+    ];
+
+    const C_BLACK = "#050507";
+    const C_RED   = "#ff1b2e";
+    const C_WHITE = "#ffffff";
+
+    function resize() {
+      w = innerWidth; h = innerHeight;
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      cvs.width = w * dpr; cvs.height = h * dpr;
+      if (ctx.resetTransform) ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+      loadArt(artIdx);
+    }
+
+    function createArtPoints(idx) {
+      const off = document.createElement('canvas'), c = off.getContext('2d');
+      off.width = 320; off.height = 500;
+      const x = 160, y = 250;
+      const pts = [];
+
+      // Функция добавления точек с определенным цветом
+      function stamp(drawFn, color) {
+        c.clearRect(0, 0, off.width, off.height);
+        drawFn(c, x, y);
+        const img = c.getImageData(0, 0, off.width, off.height).data;
+        const sc = Math.min(w / 340, (h - 130) / 520) * 0.95;
+        for (let py = 0; py < off.height; py += 5) {
+          for (let px = 0; px < off.width; px += 5) {
+            if (img[(py * off.width + px) * 4 + 3] > 120) {
+              pts.push({
+                x: w / 2 + (px - x) * sc,
+                y: (h / 2 - 20) + (py - y) * sc,
+                color: color
+              });
+            }
+          }
+        }
+      }
+
+      if (idx === 0) { // 1. Жнец (Чёрный балахон, белая коса, красный огонёк)
+        // Черный балахон жнеца
+        stamp((c, x, y) => {
+          c.fillStyle = '#000';
+          c.beginPath(); c.moveTo(x - 30, y - 110);
+          c.bezierCurveTo(x - 75, y - 90, x - 90, y + 40, x - 90, y + 200);
+          c.lineTo(x + 65, y + 200);
+          c.bezierCurveTo(x + 60, y + 40, x + 45, y - 90, x + 5, y - 110);
+          c.fill();
+          c.clearRect(x - 22, y - 15, 44, 40);
+        }, C_BLACK);
+        // Белое лезвие и древко косы
+        stamp((c, x, y) => {
+          c.fillStyle = '#fff'; c.strokeStyle = '#fff';
+          c.lineWidth = 8; c.beginPath(); c.moveTo(x - 30, y + 210); c.lineTo(x - 15, y - 140); c.stroke();
+          c.beginPath(); c.moveTo(x - 15, y - 135);
+          c.bezierCurveTo(x + 50, y - 190, x + 120, y - 150, x + 135, y - 80);
+          c.bezierCurveTo(x + 85, y - 125, x + 35, y - 130, x - 15, y - 128); c.fill();
+        }, C_WHITE);
+        // Красный огонек зажигалки и глаза во тьме
+        stamp((c, x, y) => {
+          c.fillStyle = '#f00';
+          c.beginPath(); c.arc(x, y - 18, 9, 0, 7); c.fill();
+          c.beginPath(); c.arc(x - 14, y - 65, 3, 0, 7); c.arc(x + 4, y - 65, 3, 0, 7); c.fill();
+        }, C_RED);
+      }
+      else if (idx === 1) { // 2. Демон и девушка (Чёрный демон, белая девушка, красные глаза и фон)
+        // Черное тело гигантского демона
+        stamp((c, x, y) => {
+          c.fillStyle = '#000';
+          c.beginPath(); c.moveTo(x - 18, y - 105);
+          c.bezierCurveTo(x + 20, y - 160, x + 70, y - 130, x + 85, y - 70);
+          c.bezierCurveTo(x + 110, y + 30, x + 120, y + 120, x + 110, y + 205);
+          c.lineTo(x + 30, y + 205);
+          c.bezierCurveTo(x + 40, y + 110, x + 30, y + 30, x - 6, y - 45); c.fill();
+          // рога
+          c.beginPath(); c.moveTo(x - 10, y - 115); c.lineTo(x - 30, y - 165); c.lineTo(x - 2, y - 130); c.fill();
+        }, C_BLACK);
+        // Белая фигура девушки
+        stamp((c, x, y) => {
+          c.fillStyle = '#fff'; c.strokeStyle = '#fff';
+          c.beginPath(); c.arc(x - 35, y - 75, 13, 0, 7); c.fill();
+          c.lineWidth = 5; c.beginPath(); c.moveTo(x - 44, y - 70);
+          c.bezierCurveTo(x - 60, y - 20, x - 55, y + 60, x - 52, y + 130); c.stroke();
+          c.beginPath(); c.moveTo(x - 40, y - 60);
+          c.bezierCurveTo(x - 50, y - 20, x - 25, y + 5, x - 28, y + 55);
+          c.lineTo(x - 50, y + 55); c.fill();
+          c.fillRect(x - 44, y + 55, 8, 90); c.fillRect(x - 32, y + 55, 8, 85);
+        }, C_WHITE);
+        // Красный оскал и глаз демона, аура связи
+        stamp((c, x, y) => {
+          c.fillStyle = '#f00'; c.strokeStyle = '#f00';
+          c.beginPath(); c.arc(x + 12, y - 110, 5, 0, 7); c.fill();
+          c.lineWidth = 4; c.beginPath(); c.moveTo(x - 8, y - 85); c.lineTo(x + 20, y - 90); c.stroke();
+          c.lineWidth = 8; c.beginPath(); c.moveTo(x + 35, y + 10); c.lineTo(x - 22, y + 60); c.stroke();
+        }, C_RED);
+      }
+      else if (idx === 2) { // 3. Девушка-кошка (Черный силуэт, белый контур, красные ушки/акценты)
+        // Черное тело кошки
+        stamp((c, x, y) => {
+          c.fillStyle = '#000';
+          c.beginPath(); c.arc(x - 65, y - 25, 20, 0, 7); c.fill();
+          c.beginPath(); c.moveTo(x - 60, y - 5);
+          c.bezierCurveTo(x - 30, y + 5, x - 5, y + 8, x + 30, y - 15);
+          c.bezierCurveTo(x + 60, y - 15, x + 70, y + 30, x + 45, y + 70); c.lineTo(x + 20, y + 70);
+          c.bezierCurveTo(x + 30, y + 30, x - 10, y + 20, x - 45, y + 12); c.fill();
+          c.lineWidth = 12; c.lineCap = 'round'; c.strokeStyle = '#000';
+          c.beginPath(); c.moveTo(x + 45, y - 10);
+          c.bezierCurveTo(x + 75, y - 15, x + 85, y - 90, x + 65, y - 110);
+          c.bezierCurveTo(x + 48, y - 125, x + 38, y - 95, x + 45, y - 85); c.stroke();
+          c.beginPath(); c.moveTo(x - 50, y + 10); c.lineTo(x - 45, y + 90);
+          c.moveTo(x + 45, y + 45); c.lineTo(x + 40, y + 100); c.lineTo(x + 80, y + 100); c.stroke();
+        }, C_BLACK);
+        // Белый свет из окна по спине и контуру
+        stamp((c, x, y) => {
+          c.strokeStyle = '#fff'; c.lineWidth = 3;
+          c.beginPath(); c.moveTo(x - 75, y - 15);
+          c.bezierCurveTo(x - 30, y - 5, x, y - 2, x + 30, y - 20);
+          c.bezierCurveTo(x + 65, y - 20, x + 76, y + 25, x + 50, y + 65); c.stroke();
+          c.beginPath(); c.arc(x - 68, y - 25, 18, Math.PI * 0.8, Math.PI * 1.6); c.stroke();
+        }, C_WHITE);
+        // Красные ушки и лента/ошейник
+        stamp((c, x, y) => {
+          c.fillStyle = '#f00';
+          c.beginPath(); c.moveTo(x - 80, y - 35); c.lineTo(x - 85, y - 65); c.lineTo(x - 68, y - 45);
+          c.moveTo(x - 65, y - 45); c.lineTo(x - 50, y - 68); c.lineTo(x - 46, y - 35); c.fill();
+          c.lineWidth = 5; c.strokeStyle = '#f00';
+          c.beginPath(); c.arc(x - 52, y - 12, 6, 0, 7); c.stroke();
+        }, C_RED);
+      }
+      else if (idx === 3) { // 4. Пентаграмма (Красная звезда и круг, белое пламя, черные основания)
+        // Красные круги и звезда
+        stamp((c, x, y) => {
+          const r = 120; c.strokeStyle = '#f00';
+          c.lineWidth = 4; c.beginPath(); c.arc(x, y, r, 0, 7); c.stroke();
+          c.lineWidth = 2; c.beginPath(); c.arc(x, y, r - 12, 0, 7); c.stroke();
+          const p = []; for (let i = 0; i < 5; i++) {
+            const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+            p.push({ x: x + r * Math.cos(a), y: y + r * Math.sin(a) });
+          }
+          c.lineWidth = 3; c.beginPath();
+          c.moveTo(p[0].x, p[0].y); c.lineTo(p[2].x, p[2].y); c.lineTo(p[4].x, p[4].y);
+          c.lineTo(p[1].x, p[1].y); c.lineTo(p[3].x, p[3].y); c.closePath(); c.stroke();
+        }, C_RED);
+        // Белое сияние пламени на 5 свечах
+        stamp((c, x, y) => {
+          const r = 120; c.fillStyle = '#fff';
+          for (let i = 0; i < 5; i++) {
+            const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+            c.beginPath(); c.arc(x + r * Math.cos(a), y + r * Math.sin(a) - 6, 5, 0, 7); c.fill();
+          }
+        }, C_WHITE);
+        // Черные основания свечей
+        stamp((c, x, y) => {
+          const r = 120; c.fillStyle = '#000';
+          for (let i = 0; i < 5; i++) {
+            const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+            c.fillRect(x + r * Math.cos(a) - 4, y + r * Math.sin(a), 8, 12);
+          }
+        }, C_BLACK);
+      }
+      else if (idx === 4) { // 5. Силуэт в джинсах (Белые джинсы, черный верх и швы, красный ремень)
+        // Белые джинсы
+        stamp((c, x, y) => {
+          c.fillStyle = '#fff';
+          c.beginPath(); c.moveTo(x - 55, y - 75);
+          c.bezierCurveTo(x - 85, y - 35, x - 110, y + 40, x - 65, y + 110);
+          c.bezierCurveTo(x - 40, y + 130, x - 10, y + 135, x, y + 90);
+          c.bezierCurveTo(x + 10, y + 135, x + 40, y + 130, x + 65, y + 110);
+          c.bezierCurveTo(x + 110, y + 40, x + 85, y - 35, x + 55, y - 75);
+          c.closePath(); c.fill();
+          c.fillRect(x - 65, y + 110, 24, 75); c.fillRect(x + 41, y + 110, 24, 75);
+        }, C_WHITE);
+        // Черный топ и строчки карманов
+        stamp((c, x, y) => {
+          c.fillStyle = '#000'; c.strokeStyle = '#000';
+          c.fillRect(x - 55, y - 130, 110, 50);
+          c.lineWidth = 4;
+          c.strokeRect(x - 55, y - 20, 40, 42); c.strokeRect(x + 15, y - 20, 40, 42);
+        }, C_BLACK);
+        // Красный акцент (пояс/бирка)
+        stamp((c, x, y) => {
+          c.fillStyle = '#f00';
+          c.fillRect(x - 55, y - 80, 110, 7);
+          c.fillRect(x + 45, y - 16, 8, 14);
+        }, C_RED);
+      }
+      else if (idx === 5) { // 6. А2 с клинком (Белые волосы и меч, черный бодисьют, красные глаза/ободок)
+        // Белые волосы и длинный клинок катаны
+        stamp((c, x, y) => {
+          c.fillStyle = '#fff'; c.strokeStyle = '#fff';
+          c.beginPath(); c.ellipse(x, y - 120, 22, 22, 0, 0, 7); c.fill();
+          c.lineWidth = 10; c.beginPath();
+          c.moveTo(x - 18, y - 120); c.lineTo(x - 55, y - 10);
+          c.moveTo(x + 18, y - 120); c.lineTo(x + 55, y - 10); c.stroke();
+          c.lineWidth = 3; c.beginPath(); c.moveTo(x + 40, y + 120); c.lineTo(x + 55, y - 170); c.stroke();
+        }, C_WHITE);
+        // Черный корсетный бодисьют и чулки
+        stamp((c, x, y) => {
+          c.fillStyle = '#000'; c.strokeStyle = '#000';
+          c.beginPath(); c.moveTo(x - 22, y - 100);
+          c.bezierCurveTo(x - 30, y - 50, x - 16, y - 25, x - 26, y + 45);
+          c.lineTo(x + 26, y + 45);
+          c.bezierCurveTo(x + 16, y - 25, x + 30, y - 50, x + 22, y - 100); c.fill();
+          c.lineWidth = 14; c.beginPath();
+          c.moveTo(x - 15, y + 45); c.lineTo(x - 18, y + 180);
+          c.moveTo(x + 15, y + 45); c.lineTo(x + 18, y + 180); c.stroke();
+        }, C_BLACK);
+        // Красные ушки кролика, чокер и глаза
+        stamp((c, x, y) => {
+          c.fillStyle = '#f00'; c.strokeStyle = '#f00';
+          c.beginPath();
+          c.ellipse(x - 14, y - 180, 8, 38, -0.1, 0, 7);
+          c.ellipse(x + 18, y - 180, 8, 38, 0.2, 0, 7); c.fill();
+          c.fillRect(x - 12, y - 102, 24, 5); // ошейник
+          c.beginPath(); c.arc(x - 6, y - 122, 2.5, 0, 7); c.arc(x + 6, y - 122, 2.5, 0, 7); c.fill();
+        }, C_RED);
+      }
+
+      return pts;
+    }
+
+    function loadArt(idx) {
+      const targets = createArtPoints(idx);
+      while (particles.length < targets.length) {
+        particles.push({
+          x: Math.random() * w, y: Math.random() * h,
+          tx: w / 2, ty: h / 2,
+          s: 1.1 + Math.random() * 1.5,
+          color: C_WHITE
+        });
+      }
+      if (particles.length > targets.length) particles.length = targets.length;
+      for (let i = 0; i < targets.length; i++) {
+        particles[i].tx = targets[i].x;
+        particles[i].ty = targets[i].y;
+        particles[i].color = targets[i].color;
+      }
+    }
+
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      artIdx = (artIdx + 1) % names.length;
+      lbl.textContent = `${artIdx + 1} / 6 • ${names[artIdx]}`;
+      loadArt(artIdx);
+    });
+
+    let ptr = { x: -1000, y: -1000, on: false };
+    const setTouch = (e) => {
+      if (e.touches && e.touches[0]) {
+        ptr.x = e.touches[0].clientX; ptr.y = e.touches[0].clientY; ptr.on = true;
+      }
+    };
+    window.addEventListener('touchstart', setTouch, { passive: true });
+    window.addEventListener('touchmove', setTouch, { passive: true });
+    window.addEventListener('touchend', () => { ptr.on = false; }, { passive: true });
+    window.addEventListener('pointermove', (e) => { ptr.x = e.clientX; ptr.y = e.clientY; ptr.on = true; });
+    window.addEventListener('pointerleave', () => { ptr.on = false; });
+
+    function render() {
+      ctx.fillStyle = 'rgba(15, 15, 20, 0.38)';
+      ctx.fillRect(0, 0, w, h);
+
+      for (let i = 0; i < particles.length; i++) {
+        const p = particles[i];
+        p.x += (p.tx - p.x) * 0.08;
+        p.y += (p.ty - p.y) * 0.08;
+
+        if (ptr.on) {
+          const dx = p.x - ptr.x, dy = p.y - ptr.y;
+          const d = Math.hypot(dx, dy);
+          if (d < 70 && d > 0) {
+            const f = (70 - d) * 0.16;
+            p.x += (dx / d) * f; p.y += (dy / d) * f;
+          }
+        }
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.s, 0, 7);
+        ctx.fill();
+      }
+      requestAnimationFrame(render);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+    render();
+  </script>
+</body>
+</html>
